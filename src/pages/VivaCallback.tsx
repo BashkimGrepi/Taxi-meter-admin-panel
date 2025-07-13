@@ -24,7 +24,8 @@ const VivaCallback = () => {
     const sendCodeToBackend = async () => {
       
       try {
-        await axiosInstance.post("/stripe/oauth", { code, state });
+        //await axiosInstance.post("/viva/oauth", { code, state });
+        console.log("oauth code sent to backend successfully");
         setStatus('success');
         setTimeout(() => navigate('/'), 2000);
       } catch (error) {

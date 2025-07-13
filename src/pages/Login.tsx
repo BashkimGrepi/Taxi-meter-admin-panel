@@ -25,13 +25,15 @@ const Login = () => {
             const response = await axios.post("http://localhost:8080/api/auth/login", form);
             const { token } = response.data;
             localStorage.setItem("token", token);
+            console.log("Login successful, token:", token);
 
             // Decode the JWT token to get role information
             const payload = JSON.parse(atob(token.split(".")[1]));
             const role = payload.role; 
+            console.log("User role:", role);
 
 
-            if (role !== "ADMIN") {
+            if (role !== "ROLE_ADMIN") {
                 setError("You are not authorized to access this page.");
                 return;
             }

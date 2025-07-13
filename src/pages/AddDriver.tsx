@@ -28,7 +28,7 @@ const AddDriver = () => {
         //localhost:8080/api
 
         try {
-            await axiosInstance.post("/drivers", form);
+            await axiosInstance.post("/admin/drivers/add", form);
             alert("Driver added successfully!");
             navigate("/"); // Redirect to the admin dashboard after successful addition
             

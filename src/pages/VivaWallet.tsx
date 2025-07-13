@@ -23,10 +23,14 @@ export default function PaymentIntegration() {
       
       // Check if stripeConnected is true from the backend response
       setIsLinked(response.data.stripeConnected === true);
+      console.log("Payment provider linked status:", response.data.stripeConnected);
       
       // Store the stripeUserId if it exists
       if (response.data.stripeUserId) {
         setStripeUserId(response.data.stripeUserId);
+        console.log("Stripe User ID:", response.data.stripeUserId);
+      } else {
+        console.log("No Stripe User ID found in response");
       }
       
       // Clear any previous errors

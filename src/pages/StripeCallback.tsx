@@ -16,6 +16,7 @@ const StripeCallback = () => {
         const code = searchParams.get('code');
         const state = searchParams.get('state'); // Also get state parameter if present
         
+        
         if (!code) {
           setStatus('error');
           setErrorMessage('Authorization code missing from callback URL');
@@ -24,8 +25,9 @@ const StripeCallback = () => {
 
         console.log("Received code:", code);
         console.log("Received state:", state);
-
-        // First, make sure we have a valid token
+        
+        
+        // check if valid token
         const token = localStorage.getItem("token");
         if (!token) {
           setStatus('error');
@@ -34,20 +36,23 @@ const StripeCallback = () => {
           return;
         }
 
-        // Instead of trying to access the backend right away,
-        // let's just set success and redirect to the dashboard
-        // The backend has already processed the callback successfully
-        // based on the console output that shows "account linked successfully"
-        setStatus('success');
-        
-        // Redirect back to dashboard after success
-        setTimeout(() => {
-          // After successful OAuth flow and before redirecting,
+        // Send the code to the backend for processing
+        try {
+          await axiosInstance.post("/stripe/oauth", { code, state });
+          console.log("OAuth code sent to backend successfully");
+          
+        } catch (error) {
+          console.error('Error sending code to backend:', error);
+          return;
+        }
           // update localStorage to indicate Stripe is connected
-          localStorage.setItem("stripeConnected", "true");
-          navigate('/');
-        }, 3000);
-        
+        localStorage.setItem("stripeConnected", "true");
+        setStatus('success');
+
+
+      
+        // Redirect back to dashboard after success
+        setTimeout(() => navigate('/'), 3000);
       } catch (error: any) {
         console.error('Error processing Stripe OAuth callback:', error);
         
