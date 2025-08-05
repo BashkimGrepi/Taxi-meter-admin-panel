@@ -25,6 +25,7 @@ const Login = () => {
             const response = await axios.post("http://localhost:8080/api/auth/login", form);
             const { token } = response.data;
             localStorage.setItem("token", token);
+            localStorage.setItem("entrepenouerId", response.data.entrepenouerId); // Store the entrepreneur ID if available
             console.log("Login successful, token:", token);
 
             // Decode the JWT token to get role information

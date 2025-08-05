@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CheckCircle, LinkIcon, AlertCircle, ArrowRight, ExternalLink, RefreshCw } from "lucide-react";
+import { CheckCircle, LinkIcon, AlertCircle, ArrowRight, ExternalLink, RefreshCw, XCircle } from "lucide-react";
 import axiosInstance from "../services/AxiosInstance";
 import { useNavigate } from "react-router-dom";
 
@@ -67,10 +67,19 @@ export default function PaymentIntegration() {
     setLoading(true);
     setMessage("");
     setMessageType(null);
+
+    const entrepenouerId = localStorage.getItem("entrepenouerId");
+    if (!entrepenouerId) {
+      setLoading(false);
+      setMessageType("error");
+      setMessage("Entrepreneur ID is missing");
+      return;
+    }
+    console.log("Initiating OAuth flow for Entrepenouer ID:", entrepenouerId);
     
     try {
       // Use the correct endpoint for authorization URL
-      const res = await axiosInstance.get("/stripe/authorize-url");
+      const res = await axiosInstance.get(`/stripe/authorize-url?entrepenouerId=${entrepenouerId}`);
       if (res.data?.authUrl) {
         // Redirect to the authorization URL
         window.location.href = res.data.authUrl;
@@ -84,6 +93,37 @@ export default function PaymentIntegration() {
       setLoading(false);
     }
   };
+
+  const disconnectPaymentProvider = async () => {
+    setLoading(true);
+    setMessage("");
+    setMessageType(null);
+
+    const entrepenouerId = localStorage.getItem("entrepenouerId");
+    if (!entrepenouerId) {
+      setLoading(false);
+      setMessageType("error");
+      setMessage("Entrepreneur ID is missing");
+      return;
+    }
+
+    try {
+      await axiosInstance.post(`/stripe/disconnect?entrepenouerId=${entrepenouerId}`);
+      await fetchPaymentProviderStatus(); // Refresh status after disconnect
+
+      console.log("Payment provider disconnected successfully");
+      setIsLinked(false);
+      setStripeUserId(null);
+      setMessageType("info");
+      setMessage("Payment provider disconnected successfully");
+    } catch (error) {
+      console.error("Failed to disconnect payment provider:", error);
+      setMessageType("error");
+      setMessage("Failed to disconnect payment provider. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const navigateToDashboard = () => {
     navigate("/");
@@ -225,7 +265,28 @@ export default function PaymentIntegration() {
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
                   Payment Account Connected
                 </h3>
-                
+                <div className="flex gap-4">
+                    
+               
+                <button
+                  onClick={disconnectPaymentProvider}
+                  disabled={loading}
+                  className="inline-flex items-center px-5 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Disconnecting...
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="mr-2" size={16} />
+                      Disconnect Stripe
+                    </>
+                  )}
+                </button>
+              </div>
+
                 <p className="text-gray-600 mb-6">
                   Your payment account has been successfully connected and you can now process payments.
                 </p>

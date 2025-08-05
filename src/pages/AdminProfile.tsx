@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { User, Mail, Building, Save, CheckCircle, AlertCircle, RefreshCw, LinkIcon } from "lucide-react";
 import axiosInstance from "../services/AxiosInstance";
+import MaskedValue from "../components/MaskedValue";
 
 const AdminProfile = () => {
   // State for profile data
@@ -334,7 +335,16 @@ const AdminProfile = () => {
               {stripeConnected && stripeUserId && (
                 <div className="sm:col-span-2">
                   <dt className="text-sm font-medium text-gray-500">Stripe Account ID</dt>
-                  <dd className="mt-1 text-sm font-mono text-gray-900">{stripeUserId}</dd>
+                  <dd className="mt-1">
+                    <MaskedValue
+                      value={stripeUserId}
+                      maskType="partial"
+                      showStart={4}
+                      showEnd={4}
+                      copyLabel="Stripe Account ID"
+                      className="text-gray-900"
+                    />
+                  </dd>
                 </div>
               )}
               

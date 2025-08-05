@@ -9,6 +9,7 @@ const StripeCallback = () => {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState('');
 
+
   useEffect(() => {
     const processCallback = async () => {
       try {
@@ -17,9 +18,9 @@ const StripeCallback = () => {
         const state = searchParams.get('state'); // Also get state parameter if present
         
         
-        if (!code) {
+        if (!code && !state) {
           setStatus('error');
-          setErrorMessage('Authorization code missing from callback URL');
+          setErrorMessage('Authorization code and state missing from callback URL');
           return;
         }
 
@@ -38,11 +39,23 @@ const StripeCallback = () => {
 
         // Send the code to the backend for processing
         try {
-          await axiosInstance.post("/stripe/oauth", { code, state });
+          const token = localStorage.getItem("token");
+          if (!token) {
+            setStatus('error');
+            setErrorMessage('You need to be logged in to connect your Stripe account');
+            setTimeout(() => navigate('/login'), 3000);
+            return;
+          }
+          await axiosInstance.post(`/stripe/oauth?entrepenouerId=${state}`, { code });
+          console.log("token sent to backend:", token);
           console.log("OAuth code sent to backend successfully");
           
         } catch (error) {
-          console.error('Error sending code to backend:', error);
+          const err = error as any;
+          console.error('Error sending code to backend:', err.response?.data || err.message);
+          setStatus('error');
+          setErrorMessage('Failed to connect Stripe account. Please try again.');
+  
           return;
         }
           // update localStorage to indicate Stripe is connected

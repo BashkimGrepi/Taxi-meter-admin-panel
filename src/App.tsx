@@ -5,7 +5,7 @@ import AdminProfile from './pages/AdminProfile';
 import AddDriver from './pages/AddDriver';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import VivaWallet from './pages/VivaWallet';
+import VivaWallet from './pages/StripeWallet';
 import StripeCallback from './pages/StripeCallback';
 import ProtectedRoute from './components/ProtectedRoute';
 

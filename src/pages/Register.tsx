@@ -35,7 +35,12 @@ const Register = () => {
       navigate("/login");
     } catch (error) {
       console.error("Registration failed", error);
-      alert("Registration failed. Try again.");
+      console.log(error);
+      if (axios.isAxiosError(error) && error.response) {
+        alert(`Registration failed: ${error.response.data.message}`);
+      } else {
+        alert("Registration failed. Try again.");
+      }
     } finally {
       setIsLoading(false);
     }

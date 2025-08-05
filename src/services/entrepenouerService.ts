@@ -10,7 +10,7 @@ export const getEntrepenouerProfile = async (): Promise<Entrepenouer> => {
     return response.data;
 }
 
-export const updateEntrepenouerProfile = async (profileData: Promise<Entrepenouer>) => {
+export const updateEntrepenouerProfile = async (profileData: Partial<Entrepenouer>): Promise<Entrepenouer> => {
   const response = await axiosInstance.put("/admin/profile/edit", profileData);
   return response.data;
 };
