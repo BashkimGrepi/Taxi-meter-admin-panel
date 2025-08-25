@@ -1,169 +1,211 @@
-import React, { useState } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import { Lock, Mail, Car } from "lucide-react";
-import loggin from "../assets/images/loggin.jpeg"; // Adjust the path as necessary
+import { FormEvent, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../app/AuthProvider';
+import { notify } from '../app/ToastBoundary';
+import { isSelection, hasToken, loginAdmin, TenantOption, extractToken } from '../services/AuthService';
+import auth from '../assets/images/auth.svg'
 
-const Login = () => {
-    const navigate = useNavigate();
+type Stage = 'form' | 'select';
 
-    const [form, setForm] = useState({
-        email: "",
-        password: "",
-    });
+export default function Login() {
+  const { setToken } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation() as any;
+  const from = location.state?.from?.pathname ?? '/';
 
-    const [error, setError] = useState("");
+  const [stage, setStage] = useState<Stage>('form');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
 
-    const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
-    };
+  // For selection stage
+  const [choices, setChoices] = useState<TenantOption[]>([]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        try {
-            const response = await axios.post("http://localhost:8080/api/auth/login", form);
-            const { token } = response.data;
-            localStorage.setItem("token", token);
-            localStorage.setItem("entrepenouerId", response.data.entrepenouerId); // Store the entrepreneur ID if available
-            console.log("Login successful, token:", token);
-
-            // Decode the JWT token to get role information
-            const payload = JSON.parse(atob(token.split(".")[1]));
-            const role = payload.role; 
-            console.log("User role:", role);
-
-
-            if (role !== "ROLE_ADMIN") {
-                setError("You are not authorized to access this page.");
-                return;
-            }
-            navigate("/");
-
-        } catch (err) {
-            setError("Invalid username or password.");
-
-        }
+  async function submitCredentials(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const res = await loginAdmin({ email, password });
+      if (isSelection(res)) {
+        if (!res.tenants?.length) throw new Error('No tenants available for this user.');
+        setChoices(res.tenants);
+        setStage('select');
+        notify.info('Choose a company to continue');
+        return;
+      }
+      if (hasToken(res)) {
+        setToken(extractToken(res));
+        notify.success('Logged in');
+        navigate(from, { replace: true });
+        return;
+      }
+      throw new Error('Unexpected login response');
+    } catch (e: any) {
+      notify.error(e?.message ?? 'Login failed');
+    } finally {
+      setBusy(false);
     }
+  }
+
+  async function chooseTenant(t: TenantOption) {
+    setBusy(true);
+    try {
+      const res = await loginAdmin({ email, password, tenantId: t.tenantId });
+      if (!hasToken(res)) throw new Error('Unexpected response when selecting tenant');
+      setToken(extractToken(res)); // AuthProvider effect will store tenantId from JWT
+      notify.success(`Logged in to ${t.tenantName}`);
+      navigate(from, { replace: true });
+    } catch (e: any) {
+      notify.error(e?.message ?? 'Failed to finalize login');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (stage === 'select') {
     return (
-        <div className="flex h-screen bg-white">
-            {/* Left side - Login form */}
-            <div className="w-full md:w-1/2 flex items-center justify-center px-8 md:px-16 lg:px-24 z-10">
-                <div className="w-full max-w-md">
-                    <div className="mb-8">
-                        <div className="flex items-center space-x-3">
-                            <div className="bg-black p-2 rounded-full">
-                                <Car className="w-5 h-5 text-white" />
-                            </div>
-                            <h2 className="text-2xl font-bold text-black">Taxi-Meter Panel</h2>
-                        </div>
-                        <h1 className="mt-6 text-3xl font-bold text-black">Welcome back</h1>
-                        <p className="mt-2 text-gray-500">Please sign in to your account</p>
-                    </div>
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="w-full max-w-lg space-y-4">
+          <h1 className="text-2xl font-semibold text-center">Choose a company</h1>
+          <ul className="space-y-3">
+            {choices.map(c => (
+              <li key={c.tenantId}>
+                <button
+                  onClick={() => chooseTenant(c)}
+                  disabled={busy}
+                  className="w-full text-left border rounded p-3 hover:bg-gray-50 disabled:opacity-60"
+                >
+                  <div className="font-medium">{c.tenantName}</div>
+                  <div className="text-xs text-gray-500">Role: {c.role ?? '—'}</div>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button
+            onClick={() => setStage('form')}
+            className="text-sm text-gray-600 hover:text-black underline"
+          >
+            Back to login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-                    {error && (
-                        <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700">
-                            <p>{error}</p>
-                        </div>
-                    )}
+  // Stage: form
+return (
+  <div className="min-h-screen bg-white">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+        {/* LEFT: Login card */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-[0_6px_24px_rgba(0,0,0,0.06)] p-6 sm:p-8 lg:p-10">
+          <h1 className="text-4xl font-bold tracking-tight text-slate-900">Sign in</h1>
+          <p className="mt-3 text-slate-500 leading-relaxed">
+            Sign in to your account and explore a world of possibilities. Your journey begins here.
+          </p>
 
-                    <form className="space-y-6" onSubmit={handleSubmit}>
-                        <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                                Email
-                            </label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Mail className="w-5 h-5 text-gray-400" />
-                                </div>
-                                <input
-                                    id="email"
-                                    name="email"
-                                    type="text"
-                                    autoComplete="email"
-                                    required
-                                    className="appearance-none block w-full px-3 py-3 pl-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black"
-                                    placeholder="Enter your email"
-                                    value={form.email}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                        </div>
+          <form onSubmit={submitCredentials} className="mt-8 space-y-5">
+            {/* Email */}
+            <label className="block">
+              <span className="text-sm font-medium text-slate-800">User name</span>
+              <div className="relative mt-2">
+                <input
+                  type="email"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pl-11 text-slate-900 placeholder-slate-400 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                  placeholder="Enter user name"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  autoComplete="username"
+                  required
+                />
+                <svg
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                >
+                  <path d="M4 4h16v16H4z" stroke="none" />
+                  <path d="M4 8l8 5l8-5" />
+                </svg>
+              </div>
+            </label>
 
-                        <div>
-                            <div className="flex items-center justify-between mb-1">
-                                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                                    Password
-                                </label>
-                                <a href="#" className="text-sm font-medium text-black hover:text-gray-700">
-                                    Forgot password?
-                                </a>
-                            </div>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Lock className="w-5 h-5 text-gray-400" />
-                                </div>
-                                <input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    autoComplete="current-password"
-                                    required
-                                    className="appearance-none block w-full px-3 py-3 pl-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black"
-                                    placeholder="Enter your password"
-                                    value={form.password}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                        </div>
+            {/* Password */}
+            <label className="block">
+              <span className="text-sm font-medium text-slate-800">Password</span>
+              <div className="relative mt-2">
+                <input
+                  type="password"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pl-11 text-slate-900 placeholder-slate-400 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                  placeholder="Enter password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                />
+                <svg
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                >
+                  <rect x="3" y="11" width="18" height="10" rx="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </div>
+            </label>
 
-                        <div className="flex items-center">
-                            <input
-                                id="remember-me"
-                                name="remember-me"
-                                type="checkbox"
-                                className="h-4 w-4 text-black focus:ring-black border-gray-300 rounded"
-                            />
-                            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                                Remember me
-                            </label>
-                        </div>
-
-                        <button
-                            type="submit"
-                            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
-                        >
-                            Sign in
-                        </button>
-                    </form>
-
-                    <div className="mt-8 text-center">
-                        <p className="text-sm text-gray-600">
-                            Don't have an account?{' '}
-                            <button
-                                onClick={() => navigate('/register')}
-                                className="font-medium text-black hover:text-gray-700"
-                            >
-                                Sign up
-                            </button>
-                        </p>
-                    </div>
-                </div>
+            {/* Row: Remember + Forgot */}
+            <div className="flex items-center justify-between">
+              <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                Remember me
+              </label>
+              <button
+                type="button"
+                className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+              >
+                Forgot your password?
+              </button>
             </div>
 
-            {/* Right side - Image */}
-            <div className="hidden md:block md:w-1/2 bg-gray-100 relative">
-              <div className="absolute inset-0 bg-black bg-opacity-20 z-0"></div>
-              
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={busy}
+              className="w-full rounded-xl bg-indigo-600 py-3 text-white text-sm font-semibold shadow-sm transition hover:bg-indigo-700 disabled:opacity-60"
+            >
+              {busy ? 'Checking…' : 'Sign in'}
+            </button>
 
-                  <img src={loggin} alt="taxi_application" />              
-              <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black to-transparent">
-                  <h3 className="text-2xl font-bold text-white">Taxi-Meter Admin Dashboard</h3>
-                  <p className="text-gray-200 mt-2">Manage your taxi business efficiently</p>
-              </div>
+            {/* Footer link */}
+            <p className="text-center text-sm text-slate-600">
+              Don&apos;t have an account{' '}
+              <a className="font-semibold text-indigo-600 hover:text-indigo-700" href="#">
+                Register here
+              </a>
+            </p>
+          </form>
+        </div>
+
+        {/* RIGHT: Illustration */}
+        <div className="hidden lg:block">
+          <div className="relative">
+            <img
+              src={auth}
+              alt="Secure sign-in illustration"
+              className="w-full max-w-2xl ml-auto"
+            />
           </div>
         </div>
-    );
-};
+      </div>
+    </div>
+  </div>
+);
 
-export default Login;
+}

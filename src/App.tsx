@@ -1,47 +1,49 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import AdminLayout from './layouts/AdminLayout';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminProfile from './pages/AdminProfile';
-import AddDriver from './pages/AddDriver';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import ProtectedRoute from './routes/ProtectedRoute';
 import Login from './pages/Login';
-import Register from './pages/Register';
-import VivaWallet from './pages/StripeWallet';
-import StripeCallback from './pages/StripeCallback';
-import ProtectedRoute from './components/ProtectedRoute';
+import Dashboard from './pages/Dashboard';
+import { Role } from './types/schema';
+import TenantSelect from './pages/TenantSelect';
+import AdminLayout from './layouts/AdminLayout';
+import Drivers from './pages/Drivers';
+import AddDriver from './pages/AddDriver';
+import Transactions from './pages/Transactions';
+import Payments from './pages/Payments';
+import Profile from './pages/Profile';
 
-function App() {
+export default function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Public routes */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        
-        {/* Update this route to handle ALL /stripe/callback URLs regardless of query params */}
-        <Route path="/stripe/callback" element={<StripeCallback />} />
-        
-        {/* Protected admin routes */}
-        <Route path="/" element={
-          <ProtectedRoute requireViva={false}>
+    <Routes>
+      <Route path="/login" element={<Login />} />
+
+      {/* Tenant chooser: requires auth but NOT a selected tenant */}
+      <Route
+        path="/tenant/select"
+        element={
+          <ProtectedRoute requireTenant={false} allow={[Role.ADMIN, Role.MANAGER]}>
+            <TenantSelect />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Admin layout: requires auth + tenant */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute allow={[Role.ADMIN, Role.MANAGER]} requireTenant>
             <AdminLayout />
           </ProtectedRoute>
-        }>
-          <Route index element={
-            <ProtectedRoute>
-              <AdminDashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="profile" element={<AdminProfile />} />
-          <Route path="add-driver" element={
-            <ProtectedRoute>
-              <AddDriver />
-            </ProtectedRoute>
-          } />
-          <Route path="viva-wallet" element={<VivaWallet />} />
-        </Route>
-      </Routes>
-    </Router>
+        }
+      >
+        <Route index element={<Dashboard />} />
+        <Route path="drivers" element={<Drivers />} />
+        <Route path="drivers/add" element={<AddDriver />} />
+        <Route path="transactions" element={<Transactions />} />
+        <Route path="payments" element={<Payments />} />
+        <Route path="profile" element={<Profile />} />
+      </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
-
-export default App;

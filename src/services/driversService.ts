@@ -1,28 +1,43 @@
-import axiosInstance from "../services/AxiosInstance";
-import { Driver } from "../types/Driver";
+import { axiosInstance } from './AxiosInstance';
+import { DriverProfile, DriverStatus, Page } from '../types/schema';
 
-
-
-
-//axiosInstanse is already set up with the base URL and token interceptor ->
-//http://localhost:8080/api
-
-//get all drivers
-export const getDrivers = async (): Promise<Driver[]> => {
-    const response = await axiosInstance.get("/admin/drivers")
-    return response.data;
-};
-
-//add driver method is in the add driver page
-//import the logic here later
-
-//update driver
-export const updateDriver = async (driver: Driver): Promise<Driver> => {
-    const response = await axiosInstance.put(`/admin/drivers/edit/${driver.driverId}`, driver);
-    return response.data;
+function normalizeList(data: any): Page<DriverProfile> {
+  if (Array.isArray(data)) return { items: data, total: data.length, page: 1, pageSize: data.length };
+  if (data?.items && Array.isArray(data.items)) return data as Page<DriverProfile>;
+  return { items: [], total: 0, page: 1, pageSize: 25 };
 }
 
-//delete driver
-export const deleteDriver = async (driverId: number): Promise<void> => {
-  await axiosInstance.delete(`/admin/drivers/delete/${driverId}`);
-};
+export async function listDrivers(params: {
+  q?: string;
+  page?: number;
+  pageSize?: number;
+  status?: DriverStatus | 'ALL';
+  sort?: string;
+}) {
+  // Send both q and search to be compatible
+  const { data } = await axiosInstance.get('/admin/drivers', {
+    params: {
+      q: params.q, search: params.q,
+      status: params.status,
+      page: params.page, pageSize: params.pageSize,
+      sort: params.sort,
+    },
+  });
+  return normalizeList(data);
+}
+
+export async function createDriverProfile(payload: {
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  email?: string;
+  taxiNumber?: string;
+}) {
+  const { data } = await axiosInstance.post<DriverProfile>('/admin/drivers', payload);
+  return data;
+}
+
+export async function updateDriverProfile(id: string, patch: Partial<DriverProfile>) {
+  const { data } = await axiosInstance.patch<DriverProfile>(`/admin/drivers/${id}`, patch);
+  return data;
+}
