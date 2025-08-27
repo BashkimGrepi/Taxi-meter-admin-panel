@@ -2,7 +2,15 @@ import { FormEvent, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../app/AuthProvider';
 import { notify } from '../app/ToastBoundary';
-import { isSelection, hasToken, loginAdmin, TenantOption, extractToken } from '../services/AuthService';
+import { 
+  isSelection, 
+  isSelectionWithTicket, 
+  hasToken, 
+  loginAdmin, 
+  selectTenant,
+  TenantOption, 
+  extractToken 
+} from '../services/AuthService';
 import auth from '../assets/images/auth.svg'
 
 type Stage = 'form' | 'select';
@@ -20,12 +28,15 @@ export default function Login() {
 
   // For selection stage
   const [choices, setChoices] = useState<TenantOption[]>([]);
+  const [loginTicket, setLoginTicket] = useState<string | null>(null); // Keep loginTicket in component state only
 
   async function submitCredentials(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     try {
       const res = await loginAdmin({ email, password });
+      
+      // Handle legacy selection response (no loginTicket)
       if (isSelection(res)) {
         if (!res.tenants?.length) throw new Error('No tenants available for this user.');
         setChoices(res.tenants);
@@ -33,12 +44,25 @@ export default function Login() {
         notify.info('Choose a company to continue');
         return;
       }
+      
+      // Handle new selection response with loginTicket
+      if (isSelectionWithTicket(res)) {
+        if (!res.tenants?.length) throw new Error('No tenants available for this user.');
+        setChoices(res.tenants);
+        setLoginTicket(res.loginTicket); // Store loginTicket in component state
+        setStage('select');
+        notify.info('Choose a company to continue');
+        return;
+      }
+      
+      // Handle direct success (single tenant)
       if (hasToken(res)) {
         setToken(extractToken(res));
         notify.success('Logged in');
         navigate(from, { replace: true });
         return;
       }
+      
       throw new Error('Unexpected login response');
     } catch (e: any) {
       notify.error(e?.message ?? 'Login failed');
@@ -50,13 +74,24 @@ export default function Login() {
   async function chooseTenant(t: TenantOption) {
     setBusy(true);
     try {
-      const res = await loginAdmin({ email, password, tenantId: t.tenantId });
-      if (!hasToken(res)) throw new Error('Unexpected response when selecting tenant');
+      let res;
+      
+      if (loginTicket) {
+        // New flow: Use loginTicket with selectTenant
+        res = await selectTenant(t.tenantId, loginTicket);
+        setLoginTicket(null); // Clear loginTicket from state after use
+      } else {
+        // Legacy flow: Re-login with tenantId
+        res = await loginAdmin({ email, password, tenantId: t.tenantId });
+        if (!hasToken(res)) throw new Error('Unexpected response when selecting tenant');
+      }
+      
       setToken(extractToken(res)); // AuthProvider effect will store tenantId from JWT
       notify.success(`Logged in to ${t.tenantName}`);
       navigate(from, { replace: true });
     } catch (e: any) {
       notify.error(e?.message ?? 'Failed to finalize login');
+      setLoginTicket(null); // Clear loginTicket on error
     } finally {
       setBusy(false);
     }
@@ -82,7 +117,10 @@ export default function Login() {
             ))}
           </ul>
           <button
-            onClick={() => setStage('form')}
+            onClick={() => {
+              setStage('form');
+              setLoginTicket(null); // Clear loginTicket when going back
+            }}
             className="text-sm text-gray-600 hover:text-black underline"
           >
             Back to login

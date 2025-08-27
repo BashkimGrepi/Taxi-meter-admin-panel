@@ -12,16 +12,26 @@ export type LoginSelectionResponse = {
   tenants: TenantOption[];
 };
 
+export type LoginWithTicketResponse = {
+  requiresTenantSelection: true;
+  tenants: TenantOption[];
+  loginTicket: string; // Short-lived JWT for tenant selection
+};
+
 export type LoginSuccessResponse = {
   access_token: string;
   token_type: 'Bearer';
   expires_in: string; // e.g. "1h"
 };
 
-export type LoginResponse = LoginSelectionResponse | LoginSuccessResponse;
+export type LoginResponse = LoginSelectionResponse | LoginSuccessResponse | LoginWithTicketResponse;
 
 export function isSelection(res: LoginResponse): res is LoginSelectionResponse {
-  return (res as any)?.requiresTenantSelection === true;
+  return (res as any)?.requiresTenantSelection === true && !(res as any)?.loginTicket;
+}
+
+export function isSelectionWithTicket(res: LoginResponse): res is LoginWithTicketResponse {
+  return (res as any)?.requiresTenantSelection === true && typeof (res as any)?.loginTicket === 'string';
 }
 
 export function hasToken(res: LoginResponse): res is LoginSuccessResponse {
@@ -31,6 +41,18 @@ export function hasToken(res: LoginResponse): res is LoginSuccessResponse {
 /** Admin/Manager login. If tenantId omitted and user has many memberships, API returns selection. */
 export async function loginAdmin(params: { email: string; password: string; tenantId?: string }): Promise<LoginResponse> {
   const { data } = await axiosInstance.post<LoginResponse>('/auth/login', params);
+  return data;
+}
+
+/** Select tenant using loginTicket (Option B: Authorization header) */
+export async function selectTenant(tenantId: string, loginTicket: string): Promise<LoginSuccessResponse> {
+  const { data } = await axiosInstance.post<LoginSuccessResponse>(
+    '/auth/select-tenant', 
+    { tenantId }, 
+    {
+      headers: { Authorization: `Bearer ${loginTicket}` }
+    }
+  );
   return data;
 }
 

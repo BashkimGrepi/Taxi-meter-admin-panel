@@ -30,11 +30,17 @@ export default function ProtectedRoute({
     return true;
   }, [allow, payload]);
 
-  if (!hasAllowedRole) return <Navigate to="/login" replace state={{ from: location }} />;
+  if (!hasAllowedRole) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
 
   if (requireTenant) {
     const tid = getStoredTenantId();
-    if (!tid) return <Navigate to="/tenant/select" replace state={{ from: location }} />;
+    const payloadTenantId = payload.tenantId;
+    
+    if (!tid && !payloadTenantId) {
+      return <Navigate to="/tenant/select" replace state={{ from: location }} />;
+    }
   }
 
   return <>{children}</>;

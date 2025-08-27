@@ -17,7 +17,9 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setTokenState] = useState<string | null>(() => getStoredToken());
+  const [token, setTokenState] = useState<string | null>(() => {
+    return getStoredToken();
+  });
   const [user, setUser] = useState<User | null>(null);
 
   const payload = useMemo(() => getJwtPayload(token), [token]);
@@ -34,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     notify.info('Logged out');
   }
 
-  // Auto logout when token expires (type-safe with hasExp)
+  // Auto logout when token expires
   useEffect(() => {
     if (!token) return;
 

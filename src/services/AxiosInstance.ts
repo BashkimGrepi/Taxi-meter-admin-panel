@@ -30,6 +30,18 @@ axiosInstance.interceptors.request.use(config => {
 axiosInstance.interceptors.response.use(
   res => res,
   err => {
+    // Handle 401 Unauthorized
+    if (err.response?.status === 401) {
+      const currentPath = window.location.pathname;
+      
+      // Only redirect if we're not already on login page
+      if (currentPath !== '/login') {
+        setStoredToken(null);
+        setStoredTenantId(null);
+        window.location.href = '/login';
+      }
+    }
+    
     // Normalize Axios errors
     if (err.response) {
       err.message =
