@@ -1,5 +1,5 @@
 import { axiosInstance } from './AxiosInstance';
-import { MonthlyReportSummary, MontlyPaymentMethodsReport } from '../types/schema';
+import { MonthlyReportSummary, MonthlyPaymentMethodsReport } from '../types/schema';
 import { monthToRange } from '../utils/dates';
 
 export async function getMonthlySummary(month: string): Promise<MonthlyReportSummary> {
@@ -32,7 +32,7 @@ function normalizeMonthly(month: string, data: any,): MonthlyReportSummary {
 }
 
 
-export async function getMonthlyPaymentMethods(month: string): Promise<MontlyPaymentMethodsReport> {
+export async function getMonthlyPaymentMethods(month: string): Promise<MonthlyPaymentMethodsReport> {
   const { from, to } = monthToRange(month);
   const { data } = await axiosInstance.get('/admin/reports/payment-methods', { params: { from, to } });
   return data;
