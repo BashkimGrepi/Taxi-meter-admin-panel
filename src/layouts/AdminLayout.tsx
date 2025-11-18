@@ -1,220 +1,193 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { useAuth } from '../app/AuthProvider';
-import { useTenant } from '../app/TenantProvider';
-import { Role } from '../types/schema';
-import { getStoredTenantId } from '../services/AxiosInstance';
-import {
-  Home,
-  Users,
-  UserPlus,
-  CreditCard,
-  DollarSign,
-  User,
-  UserIcon,
-} from "lucide-react";
+import { Outlet, useLocation } from "react-router-dom";
+import { useAuth } from "../app/AuthProvider";
+import { useTenant } from "../app/TenantProvider";
+import { useLogout } from "../hooks/useLogout";
+import { useNavigation } from "../hooks/useNavigation";
+import { NavigationLink } from "../components/NavigationLink";
+import { Bell, Settings, Building2 } from "lucide-react";
+import { useTenantSync } from "../hooks/useTenantSync";
+import { useEffect } from "react";
 
-const linkBase =
-  'px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition';
-const linkActive = 'bg-gray-200';
+const TITLES: Record<string, string> = {
+  "/": "Welcome ",
+  "/drivers": "Drivers",
+  "/transactions": "Transactions",
+  "/payments": "Payments",
+  "/profile": "Profile",
+  "/pricing": "Pricing Policies",
+}
 
 export default function AdminLayout() {
-  const { payload, logout } = useAuth();
+  const location = useLocation();
   const { tenant } = useTenant();
-  const navigate = useNavigate();
+  const { handleLogout } = useLogout();
+  const { groupedNavItems } = useNavigation();
+  const { refreshTenantData } = useTenantSync(); 
 
-  // Roles from memberships (when present)
-  const rolesFromMemberships = new Set((payload?.memberships ?? []).map(m => m.role));
-  // Fallback to top-level role from the JWT (your admin token has this)
-  const topLevelRole = payload?.role;
+  useEffect(() => {
+    refreshTenantData();
+  }, [refreshTenantData]);
+  
 
-  const isAdminOrManager =
-    rolesFromMemberships.has(Role.ADMIN) ||
-    rolesFromMemberships.has(Role.MANAGER) ||
-    topLevelRole === Role.ADMIN ||
-    topLevelRole === Role.MANAGER;
+  const currentTitle = TITLES[location.pathname] || "/";
 
-  function onLogout() {
-    logout();
-    navigate('/login', { replace: true });
-  }
+  return (
+    <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-gray-100 to-slate-160">
+      {/* LEFT SIDEBAR - Thin & Integrated */}
+      <aside className="flex fixed left-0 top-0 bottom-0 w-20 z-40 flex-col bg-gradient-to-br from-slate-20 via-gray-60 to-slate-100">
+        {/* Company info moved to main header area */}
 
-  const tid = getStoredTenantId();
-  const companyLabel = tenant?.name ?? payload?.tenantName ?? 'Select a company';
-  const businessId = tenant?.businessId ?? '—';
-
-return (
-    <div className="min-h-screen bg-neutral-50 text-slate-900">
-      {/* Top bar: full-width, fixed */}
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-indigo-600 shadow-sm" />
-            <div>
-              <div className="font-semibold tracking-tight">Taxi-Meter Admin</div>
-              <div className="text-xs text-slate-500">
-                {companyLabel} ({businessId}){tid ? "" : " — no tenant selected"}
+        {/* Navigation - Icon Only */}
+        <nav className="flex-1 px-3 py-6 space-y-2">
+          {/* Render all navigation items as icons only */}
+          {groupedNavItems.ungrouped.map((item) => (
+            <div key={item.to} className="group relative flex justify-center">
+              <NavigationLink
+                key={item.to}
+                to={item.to}
+                icon={item.icon}
+                label="" // Hide labels for icon-only view
+                end={item.end}
+              />
+              {/* Enhanced Tooltip */}
+              <div className="absolute left-full ml-3 px-3 py-2 bg-slate-900/95 backdrop-blur-sm text-white text-sm font-medium rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 z-50 whitespace-nowrap top-1/2 -translate-y-1/2 shadow-lg border border-slate-700/50">
+                {item.label}
+                {/* Tooltip Arrow */}
+                <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900/95"></div>
               </div>
             </div>
-          </div>
+          ))}
 
-          <button
-            onClick={onLogout}
-            className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 shadow-sm transition
-                       hover:bg-slate-50 active:scale-[.98]
-                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600/40"
-          >
-            Logout
-          </button>
-        </div>
-      </header>
-
-      {/* LEFT sidebar — dark, DROPS from the top nav */}
-      <aside
-        className="
-          hidden md:flex
-          fixed left-0 top-16 bottom-0 w-64
-          h-[calc(100vh-4rem)]
-          z-40 flex-col bg-slate-900 text-white border-r border-slate-800
-        "
-      >
-        {/* Profile block */}
-        <div className="px-5 pt-6 pb-5">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-slate-600 flex items-center justify-center text-white text-base font-semibold ring-2 ring-slate-800">
-              {(companyLabel && companyLabel[0]) || "A"}
+          {/* Visual separator for grouped items */}
+          {Object.keys(groupedNavItems.groups).length > 0 && (
+            <div className="py-6">
+              <div className="w-8 h-px bg-white/10 mx-auto"></div>
             </div>
-            <div>
-              <div className="text-sm font-semibold leading-tight">{companyLabel || "John Doe"}</div>
-              <div className="text-[11px] text-slate-400 leading-tight">{businessId || "john@company.com"}</div>
-            </div>
-          </div>
-          <div className="mt-4 h-px w-full bg-slate-700/60" />
-        </div>
-
-        {/* Nav */}
-        <nav className="flex-1 px-3 pb-6 space-y-1 overflow-y-auto">
-          <NavLink
-            to="/"
-            end
-            className={({ isActive }) =>
-              `flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition
-               ${isActive ? "bg-slate-800 text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"}`
-            }
-          >
-            <Home className="h-5 w-5 shrink-0" />
-            Dashboard
-          </NavLink>
-
-          {isAdminOrManager && (
-            <>
-              <div className="mt-4 mb-1 px-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                Drivers
-              </div>
-
-              <NavLink
-                to="/drivers"
-                className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition
-                   ${isActive ? "bg-slate-800 text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"}`
-                }
-              >
-                <Users className="h-5 w-5 shrink-0" />
-                Driver list
-              </NavLink>
-
-              <NavLink
-                to="/drivers/add"
-                className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition
-                   ${isActive ? "bg-slate-800 text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"}`
-                }
-              >
-                <UserPlus className="h-5 w-5 shrink-0" />
-                Add driver
-              </NavLink>
-
-              <div className="mt-4 mb-1 px-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                Operations
-              </div>
-
-              <NavLink
-                to="/transactions"
-                className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition
-                   ${isActive ? "bg-slate-800 text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"}`
-                }
-              >
-                <CreditCard className="h-5 w-5 shrink-0" />
-                Transactions
-              </NavLink>
-
-              <NavLink
-                to="/payments"
-                className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition
-                   ${isActive ? "bg-slate-800 text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"}`
-                }
-              >
-                <DollarSign className="h-5 w-5 shrink-0" />
-                Payments
-              </NavLink>
-            </>
           )}
 
-          <div className="mt-4 mb-1 px-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-            Account
-          </div>
-
-          <NavLink
-            to="/profile"
-            className={({ isActive }) =>
-              `flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition
-               ${isActive ? "bg-slate-800 text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"}`
-            }
-          >
-            <UserIcon className="h-5 w-5 shrink-0" />
-            Profile
-          </NavLink>
+          {/* Grouped items without section dividers */}
+          {Object.entries(groupedNavItems.groups).map(([, items]) =>
+            items.map((item) => (
+              <div key={item.to} className="group relative flex justify-center">
+                <NavigationLink
+                  key={item.to}
+                  to={item.to}
+                  icon={item.icon}
+                  label="" // Hide labels for icon-only view
+                  end={item.end}
+                />
+                {/* Enhanced Tooltip */}
+                <div className="absolute left-full ml-3 px-3 py-2 bg-slate-900/95 backdrop-blur-sm text-white text-sm font-medium rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 z-50 whitespace-nowrap top-1/2 -translate-y-1/2 shadow-lg border border-slate-700/50">
+                  {item.label}
+                  {/* Tooltip Arrow */}
+                  <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900/95"></div>
+                </div>
+              </div>
+            ))
+          )}
         </nav>
-      </aside>
 
-      {/* Mobile nav (optional) sits below the fixed header */}
-      <aside className="md:hidden fixed top-16 inset-x-0 border-b border-slate-200 bg-white z-40">
-        <div className="mx-auto max-w-7xl px-3 py-2 overflow-x-auto">
-          <nav className="flex items-center gap-2">
-            <NavLink to="/" end className={({ isActive }) => `rounded-md px-3 py-2 text-sm ${isActive ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}>
-              Dashboard
-            </NavLink>
-            {isAdminOrManager && (
-              <>
-                <NavLink to="/drivers" className={({ isActive }) => `rounded-md px-3 py-2 text-sm ${isActive ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}>
-                  Drivers
-                </NavLink>
-                <NavLink to="/drivers/add" className={({ isActive }) => `rounded-md px-3 py-2 text-sm ${isActive ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}>
-                  Add
-                </NavLink>
-                <NavLink to="/transactions" className={({ isActive }) => `rounded-md px-3 py-2 text-sm ${isActive ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}>
-                  Transactions
-                </NavLink>
-                <NavLink to="/payments" className={({ isActive }) => `rounded-md px-3 py-2 text-sm ${isActive ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}>
-                  Payments
-                </NavLink>
-              </>
-            )}
-            <NavLink to="/profile" className={({ isActive }) => `rounded-md px-3 py-2 text-sm ${isActive ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}>
-              Profile
-            </NavLink>
-          </nav>
+        {/* User Profile & Logout - Minimalist */}
+        <div className="px-3 pb-8 pt-4 border-t border-white/5 space-y-4 mt-auto">
+          {/* Logout Button */}
+          <div className="group relative flex justify-center">
+            <button
+              onClick={handleLogout}
+              className="w-11 h-11 flex items-center justify-center rounded-2xl bg-white/50 hover:bg-red-50/70 text-slate-600 hover:text-red-600 transition-all duration-300 hover:shadow-lg hover:scale-105 border border-slate-200/40 hover:border-red-200/60"
+            >
+              <svg
+                className="h-5 w-5 transition-transform duration-200 group-hover:scale-110"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+            </button>
+            {/* Enhanced Tooltip */}
+            <div className="absolute left-full ml-3 px-3 py-2 bg-slate-900/95 backdrop-blur-sm text-white text-sm font-medium rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 z-50 whitespace-nowrap top-1/2 -translate-y-1/2 shadow-lg border border-slate-700/50">
+              Sign Out
+              {/* Tooltip Arrow */}
+              <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900/95"></div>
+            </div>
+          </div>
         </div>
       </aside>
 
-      {/* Content offset for fixed header & sidebar */}
-      <main className="pt-16 px-4 sm:px-6 lg:px-8 py-5 md:ml-64">
-        <div className="mx-auto max-w-7xl">
-          <Outlet />
+      {/* Main Content - Spacious Layout */}
+      <main className="ml-20 h-screen overflow-y-auto custom-scrollbar">
+        <div className="px-8 py-12">
+          <div className="mx-auto max-w-6xl">
+            {/* Header Area - Modern Welcome Header */}
+            <div className="mb-12">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                {/* Left Side - Greeting & User Info */}
+                <div className="flex items-center gap-4">
+                  {/* Greeting & Company Info */}
+                  <div>
+                    <p className="font-extralight text-slate-950">
+                      Personal Dashboard
+                    </p>
+                    <h1 className="text-3xl font-sans text-slate-950 mb-1">
+                     {currentTitle}
+                    </h1>
+                    <div className="flex items-center gap-2 text-slate-600 ">
+                      {tenant?.name && (
+                        <>
+                          <Building2 className="h-4 w-4" />
+                          <span className="text-sm font-extralight text-slate-950">
+                            {tenant.name}
+                          </span>
+                          {tenant.businessId && (
+                            <span className="text-xs text-slate-400">
+                              • {tenant.businessId}
+                            </span>
+                          )}
+                        </>
+                      )}
+                      {!tenant?.name && (
+                        <span className="text-sm text-slate-500">
+                          Welcome to your dashboard
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Side - Action Buttons */}
+                <div className="flex items-center gap-3">
+                  {/* Notifications Button */}
+                  <button className="relative w-11 h-11 rounded-2xl bg-white/70 hover:bg-white border border-slate-200/60 hover:border-slate-300 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center group">
+                    <Bell className="h-5 w-5 text-slate-600 group-hover:text-slate-900 transition-colors" />
+                    {/* Notification Badge */}
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></div>
+                  </button>
+
+                  {/* Settings Button */}
+                  <button className="w-11 h-11 rounded-2xl bg-white/70 hover:bg-white border border-slate-200/60 hover:border-slate-300 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center group">
+                    <Settings className="h-5 w-5 text-slate-600 group-hover:text-slate-900 group-hover:rotate-90 transition-all duration-300" />
+                  </button>
+
+                  {/* User Menu Button */}
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="mt-8 w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+            </div>
+
+            {/* Content Area */}
+            <div className="space-y-8">
+              <Outlet />
+            </div>
+          </div>
         </div>
       </main>
     </div>
   );
-
 }

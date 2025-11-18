@@ -18,3 +18,12 @@ export async function getTenant(tenantId: string): Promise<Tenant> {
     throw err;
   }
 }
+
+export async function selectTenant(): Promise<Tenant[]> {
+  try {
+    const { data } = await axiosInstance.post<Tenant[]>("/tenants/select-tenant")
+    return data;
+  } catch (err) {
+    throw err;
+  }
+}

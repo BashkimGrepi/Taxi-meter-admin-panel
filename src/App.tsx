@@ -1,15 +1,19 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import ProtectedRoute from './routes/ProtectedRoute';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import { Role } from './types/schema';
-import TenantSelect from './pages/TenantSelect';
-import AdminLayout from './layouts/AdminLayout';
-import Drivers from './pages/Drivers';
-import AddDriver from './pages/AddDriver';
-import Transactions from './pages/Transactions';
-import Payments from './pages/Payments';
-import Profile from './pages/Profile';
+import { Routes, Route, Navigate } from "react-router-dom";
+import ProtectedRoute from "./routes/ProtectedRoute";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import { Role } from "./types/schema";
+import TenantSelect from "./pages/TenantSelect";
+import AdminLayout from "./layouts/AdminLayout";
+import Drivers from "./pages/Drivers";
+import Transactions from "./pages/Transactions";
+import Payments from "./pages/Payments";
+import Profile from "./pages/Profile";
+import PricingPoliciesPage from "./pages/PricingPoliciesPage";
+import { DashboardErrorBoundary } from "./components/DashboardErrorBoundary";
+import { DriversErrorBoundary } from "./components/DriversErrorBoundary";
+import { TenantSelectErrorBoundary } from "./components/TenantSelectErrorBoundary";
+import { PaymentsErrorBoundary } from "./components/PaymentsErrorBoundary";
 
 export default function App() {
   return (
@@ -20,8 +24,13 @@ export default function App() {
       <Route
         path="/tenant/select"
         element={
-          <ProtectedRoute requireTenant={false} allow={[Role.ADMIN, Role.MANAGER]}>
-            <TenantSelect />
+          <ProtectedRoute
+            requireTenant={false}
+            allow={[Role.ADMIN, Role.MANAGER]}
+          >
+            <TenantSelectErrorBoundary>
+              <TenantSelect />
+            </TenantSelectErrorBoundary>
           </ProtectedRoute>
         }
       />
@@ -35,12 +44,33 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Dashboard />} />
-        <Route path="drivers" element={<Drivers />} />
-        <Route path="drivers/add" element={<AddDriver />} />
+        <Route
+          index
+          element={
+            <DashboardErrorBoundary>
+              <Dashboard />
+            </DashboardErrorBoundary>
+          }
+        />
+        <Route
+          path="drivers"
+          element={
+            <DriversErrorBoundary>
+              <Drivers />
+            </DriversErrorBoundary>
+          }
+        />
         <Route path="transactions" element={<Transactions />} />
-        <Route path="payments" element={<Payments />} />
+        <Route
+          path="payments"
+          element={
+            <PaymentsErrorBoundary>
+              <Payments />
+            </PaymentsErrorBoundary>
+          }
+        />
         <Route path="profile" element={<Profile />} />
+        <Route path="pricing" element={<PricingPoliciesPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

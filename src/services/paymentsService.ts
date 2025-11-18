@@ -2,14 +2,45 @@ import { axiosInstance } from './AxiosInstance';
 import { Page, Payment, PaymentProvider, PaymentStatus } from '../types/schema';
 import { fromApiPaymentStatus, toApiPaymentStatus } from './statusMap';
 
-function normalizeList(data: any): Page<Payment> {
-  const wrap = (items: any[]) => ({
-    items: items.map((p: any) => ({ ...p, status: fromApiPaymentStatus(p.status) })),
-    total: data?.total ?? items.length,
-    page: data?.page ?? 1,
-    pageSize: data?.pageSize ?? items.length,
-  });
+function normalizePayment(p: any): Payment {
+  return {
+    id: p.id,
+    tenantId: p.tenantId,
+    rideId: p.rideId ?? p.ride?.id ?? null,
 
+    // provider can be provider | paymentMethod | method | gateway
+    provider: (p.provider ?? p.paymentMethod ?? p.method ?? p.gateway ?? '') as any,
+
+    // status can be status | state
+    status: fromApiPaymentStatus((p.status ?? p.state) ?? ''),
+
+    amount: Number(p.amount ?? p.total ?? 0),
+    currency: p.currency ?? 'EUR',
+
+    createdAt: p.createdAt ?? null,
+    authorizedAt: p.authorizedAt ?? null,
+    capturedAt: p.capturedAt ?? p.paidAt ?? p.settledAt ?? p.createdAt ?? null,
+    updatedAt: p.updatedAt ?? null,
+
+    externalPaymentId: p.externalPaymentId ?? p.txnId ?? p.transactionId ?? null,
+
+    // numbering used by your export
+    receiptNumber: p.receiptNumber ?? null,
+    invoiceNumber: p.invoiceNumber ?? null,
+    numberPeriod: p.numberPeriod ?? null,
+  };
+}
+
+function normalizeList(data: any): Page<Payment> {
+  const wrap = (items: any[]) => {
+    const mapped = items.map(normalizePayment);
+    return {
+      items: mapped,
+      total: data?.total ?? mapped.length,
+      page: data?.page ?? 1,
+      pageSize: data?.pageSize ?? mapped.length,
+    };
+  };
   if (Array.isArray(data)) return wrap(data);
   if (data?.items && Array.isArray(data.items)) return wrap(data.items);
   return { items: [], total: 0, page: 1, pageSize: 25 };
@@ -40,5 +71,5 @@ export async function listPayments(params: {
 
 export async function getPayment(id: string) {
   const { data } = await axiosInstance.get<Payment>(`/admin/payments/${id}`);
-  return { ...data, status: fromApiPaymentStatus((data as any).status) } as Payment;
+  return normalizePayment(data as any);
 }

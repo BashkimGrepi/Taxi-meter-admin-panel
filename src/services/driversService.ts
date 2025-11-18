@@ -1,5 +1,5 @@
 import { axiosInstance } from './AxiosInstance';
-import { DriverProfile, DriverStatus, Page } from '../types/schema';
+import { CreateDriverProfileInput, DriverProfile, DriverStatus, Page } from '../types/schema';
 
 function normalizeList(data: any): Page<DriverProfile> {
   if (Array.isArray(data)) return { items: data, total: data.length, page: 1, pageSize: data.length };
@@ -23,17 +23,17 @@ export async function listDrivers(params: {
       sort: params.sort,
     },
   });
+    console.log('Driver list data:', data);
   return normalizeList(data);
 }
 
 export async function createDriverProfile(payload: {
   firstName: string;
   lastName: string;
-  phone?: string;
-  email?: string;
-  taxiNumber?: string;
+  phone: string;
+  email: string;
 }) {
-  const { data } = await axiosInstance.post<DriverProfile>('/admin/drivers', payload);
+  const { data } = await axiosInstance.post<CreateDriverProfileInput>('/admin/drivers/create', payload);
   return data;
 }
 

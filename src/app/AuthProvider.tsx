@@ -33,6 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   function logout() {
     setToken(null);
     setUser(null);
+    
     notify.info('Logged out');
   }
 
@@ -45,7 +46,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    
+
     const p = getJwtPayload(token);
+    console.log("JWT token Updated: ", {
+      tenantId: p?.tenantId,
+      name: p?.tenantName,
+      email: p?.email,
+      exp: p?.exp,
+      issuedAt: p?.iat,
+      
+    })
     if (!hasExp(p)) {
       logout();
       return;

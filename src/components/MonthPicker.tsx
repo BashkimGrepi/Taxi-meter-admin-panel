@@ -7,7 +7,7 @@ type Props = {
 export default function MonthPicker({ value, onChange, label = 'Month' }: Props) {
   return (
     <label className="block text-sm font-medium text-slate-800">
-      {label}
+      
       <div className="relative mt-1">
         {/* Calendar icon (decorative) */}
         <svg

@@ -1,33 +1,39 @@
 import { axiosInstance } from './AxiosInstance';
-import { MonthlyReportSummary } from '../types/schema';
+import { MonthlyReportSummary, MontlyPaymentMethodsReport } from '../types/schema';
 import { monthToRange } from '../utils/dates';
 
 export async function getMonthlySummary(month: string): Promise<MonthlyReportSummary> {
   const { from, to } = monthToRange(month);
-
   // Preferred admin endpoint
-  try {
-    const { data } = await axiosInstance.get('/admin/reports/summary', { params: { from, to } });
-    return normalizeMonthly(month, data, from, to);
-  } catch {}
-
-  // Fallback: payments summary if exposed
-  try {
-    const { data } = await axiosInstance.get('/admin/payments/summary', { params: { from, to } });
-    return normalizeMonthly(month, data, from, to);
-  } catch {}
-
-  return normalizeMonthly(month, {}, from, to);
+  const { data } = await axiosInstance.get('/admin/reports/summary', { params: { from, to } });
+  console.log("Monthly Summary Data: ", JSON.stringify(data));
+    return normalizeMonthly(month, data);
+ 
 }
 
-function normalizeMonthly(month: string, data: any, from: string, to: string): MonthlyReportSummary {
+function normalizeMonthly(month: string, data: any,): MonthlyReportSummary {
   return {
-    month, from, to,
-    ridesCount: data?.ridesCount ?? data?.rides ?? undefined,
-    completedRatio: data?.completedRatio ?? data?.completion ?? null,
-    subtotal: data?.subtotal ?? data?.fareSubtotal ?? data?.revenueSubtotal ?? null,
-    tax: data?.tax ?? data?.taxAmount ?? null,
-    total: data?.total ?? data?.revenueTotal ?? null,
-    activeDrivers: data?.activeDrivers ?? data?.drivers ?? null,
+    period: month,
+    totalRides: data?.totalRides ?? 0,
+    totalRevenue: data?.totalRevenue  ?? 0,
+    totalDistance: data?.totalDistance ?? 0,
+    avgFarePerRide: data?.avgFarePerRide ?? 0,
+    activeDrivers: data?.activeDrivers ?? data?.drivers ?? 0,
+    completionRate: data?.completionRate ?? 0,
+    paymentRate: data?.paymentRate ?? 0,
+    topDriver: {
+      name: data?.topDriver?.name ?? '',
+      rides: data?.topDriver?.rides ?? 0,
+      revenue: data?.topDriver?.revenue ?? 0,
+    }
+    
+
   };
+}
+
+
+export async function getMonthlyPaymentMethods(month: string): Promise<MontlyPaymentMethodsReport> {
+  const { from, to } = monthToRange(month);
+  const { data } = await axiosInstance.get('/admin/reports/payment-methods', { params: { from, to } });
+  return data;
 }

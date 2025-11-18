@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Simple token/tenant accessors (AuthProvider will keep these in localStorage initially)
 const TOKEN_KEY = 'auth.token';
-const TENANT_KEY = 'tenant.id';
+const TENANT_KEY = 'tenantId';
 
 export const getStoredToken = () => localStorage.getItem(TOKEN_KEY);
 export const setStoredToken = (t: string | null) =>

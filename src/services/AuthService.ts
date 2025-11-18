@@ -40,14 +40,19 @@ export function hasToken(res: LoginResponse): res is LoginSuccessResponse {
 
 /** Admin/Manager login. If tenantId omitted and user has many memberships, API returns selection. */
 export async function loginAdmin(params: { email: string; password: string; tenantId?: string }): Promise<LoginResponse> {
-  const { data } = await axiosInstance.post<LoginResponse>('/auth/login', params);
-  return data;
+  try {
+    const { data } = await axiosInstance.post<LoginResponse>('/auth/admin/login', params);
+    return data;
+  } catch (error) {
+    console.error('Login failed:', error);
+    throw error;
+  }
 }
 
 /** Select tenant using loginTicket (Option B: Authorization header) */
 export async function selectTenant(tenantId: string, loginTicket: string): Promise<LoginSuccessResponse> {
   const { data } = await axiosInstance.post<LoginSuccessResponse>(
-    '/auth/select-tenant', 
+    '/auth/admin/select-tenant', 
     { tenantId }, 
     {
       headers: { Authorization: `Bearer ${loginTicket}` }
