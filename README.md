@@ -1,54 +1,106 @@
-# React + TypeScript + Vite
+# Taxi Meter Admin Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> **⚠️ Development Notice:** This project is currently in development mode. Several features and components are subject to change as the platform evolves.
 
-Currently, two official plugins are available:
+## Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+The Taxi Meter Admin Dashboard is a multi-tenant SaaS web application designed for taxi companies to monitor and manage their business operations in real time.
 
-## Expanding the ESLint configuration
+This platform acts as a control center for taxi entrepreneurs, providing visibility into:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- Ride activity and operational status
+- Revenue and financial performance
+- Payment processing and system health
+- Driver activity and workforce management
+- Pricing configuration and business rules
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+The dashboard is built as a professional B2B operational tool — focused on clarity, real-time awareness, and financial transparency.
+
+---
+
+## Purpose
+
+The goal of this project is to provide taxi companies with:
+
+- Situational awareness of daily operations
+- Full financial visibility and payment tracking
+- Confidence in payment provider integrations (Stripe / Viva)
+- Workforce and pricing control
+- Clean and structured analytics
+
+The dashboard is read-only and insight-focused. Management actions (editing drivers, pricing, etc.) are handled on dedicated pages.
+
+---
+
+## Architecture
+
+This Admin Dashboard is part of a larger Taxi Meter SaaS ecosystem.
+
+It connects to a backend API that:
+
+- Handles authentication and multi-tenant isolation
+- Manages rides and pricing logic
+- Processes payments
+- Stores driver and company data
+- Tracks webhooks and payment events
+
+All dashboard data is tenant-scoped and securely retrieved via authenticated API requests.
+
+---
+
+## Demo & Local Testing
+
+To test this frontend locally with demo data, you need to run the backend API.
+
+You can clone the backend repository here:
+
+**Backend Repository:**  
+https://github.com/your-username/taxi-meter-backend
+
+After cloning the backend:
+
+- Follow the instructions in the README file
+
+Once the backend is running, update your frontend `.env` file:
+
+```
+VITE_API_BASE_URL=http://localhost:3000
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Then start the frontend:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+```bash
+npm install
+npm run dev
 ```
+
+You will now be able to log in and test the dashboard using seeded demo data.
+
+---
+
+## Key Features
+
+- Multi-tenant architecture
+- Real-time dashboard overview
+- Ride performance monitoring
+- Payment tracking (Stripe / Viva)
+- Driver management insights
+- Pricing awareness
+- Operational alerts and system health
+
+---
+
+## Development Status
+
+The project is built incrementally in structured phases:
+
+1. Dashboard (Overview)
+2. Rides Management
+3. Payments & Transactions
+4. Driver Management
+5. Pricing & Business Rules
+6. Provider Linking & Settings
+7. Advanced Reporting
+---
+
+<sub>*This documentation has been enhanced with AI assistance.*</sub>
