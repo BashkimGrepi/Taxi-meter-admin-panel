@@ -6,6 +6,7 @@ import { Role } from "./types/schema";
 import TenantSelect from "./pages/TenantSelect";
 import AdminLayout from "./layouts/AdminLayout";
 import Drivers from "./pages/Drivers";
+import Rides from "./pages/Rides";
 import Transactions from "./pages/Transactions";
 import Payments from "./pages/Payments";
 import Profile from "./pages/Profile";
@@ -52,6 +53,7 @@ export default function App() {
             </DashboardErrorBoundary>
           }
         />
+        <Route path="rides" element={<Rides />} />
         <Route
           path="drivers"
           element={

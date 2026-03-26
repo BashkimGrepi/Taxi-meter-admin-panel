@@ -8,6 +8,12 @@ import { AuthProvider } from "./app/AuthProvider";
 import { TenantProvider } from "./app/TenantProvider";
 import { QueryProvider } from "./app/QueryProvider";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { AgGridProvider } from "ag-grid-react";
+import { AllCommunityModule } from "ag-grid-community";
+
+const modules = [AllCommunityModule];
+
+
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -18,7 +24,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <AuthProvider>
               <TenantProvider>
                 {/* The main application component */}
-                <App />
+                <AgGridProvider modules={modules}>
+                  <App />
+                </AgGridProvider>
               </TenantProvider>
             </AuthProvider>
           </ToastBoundary>

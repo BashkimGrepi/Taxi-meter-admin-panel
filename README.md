@@ -55,8 +55,7 @@ To test this frontend locally with demo data, you need to run the backend API.
 You can clone the backend repository here:
 
 **Backend Repository:**  
-https://github.com/your-username/taxi-meter-backend
-
+https://github.com/BashkimGrepi/typescriptVersion_taxi-meter_backend.git
 After cloning the backend:
 
 - Follow the instructions in the README file
@@ -101,6 +100,7 @@ The project is built incrementally in structured phases:
 5. Pricing & Business Rules
 6. Provider Linking & Settings
 7. Advanced Reporting
+
 ---
 
-<sub>*This documentation has been enhanced with AI assistance.*</sub>
+<sub>_This documentation has been enhanced with AI assistance._</sub>

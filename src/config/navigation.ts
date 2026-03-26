@@ -5,6 +5,7 @@ import {
   DollarSign,
   UserIcon,
   ParkingMeter,
+  Car,
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 
@@ -25,6 +26,14 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     end: true,
   },
   {
+    to: "/rides",
+    icon: Car,
+    label: "Rides",
+    section: "Operations",
+    adminOnly: true,
+  },
+
+  {
     to: "/drivers",
     icon: Users,
     label: "Driver List",
@@ -34,7 +43,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
   {
     to: "/transactions",
     icon: CreditCard,
-    label: "Transactions",
+    label: "Payments & Transactions",
     section: "Financial Operations",
     adminOnly: true,
   },

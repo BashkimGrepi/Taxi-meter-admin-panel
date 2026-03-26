@@ -1,38 +1,146 @@
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import { useAuth } from "../app/AuthProvider";
 import { useTenant } from "../app/TenantProvider";
 import { useLogout } from "../hooks/useLogout";
 import { useNavigation } from "../hooks/useNavigation";
 import { NavigationLink } from "../components/NavigationLink";
-import { Bell, Settings, Building2 } from "lucide-react";
+import { Bell, User, Calendar, ChevronDown } from "lucide-react";
 import { useTenantSync } from "../hooks/useTenantSync";
-import { useEffect } from "react";
-
-const TITLES: Record<string, string> = {
-  "/": "Welcome ",
-  "/drivers": "Drivers",
-  "/transactions": "Transactions",
-  "/payments": "Payments",
-  "/profile": "Profile",
-  "/pricing": "Pricing Policies",
-}
+import { useState } from "react";
+import logo from "../assets/images/logo_black.png";
 
 export default function AdminLayout() {
-  const location = useLocation();
   const { tenant } = useTenant();
+  const { user, payload } = useAuth();
   const { handleLogout } = useLogout();
   const { groupedNavItems } = useNavigation();
-  const { refreshTenantData } = useTenantSync(); 
+  useTenantSync();
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
-  useEffect(() => {
-    refreshTenantData();
-  }, [refreshTenantData]);
-  
+  // Period selection state
+  type PeriodOption = "all_time" | "this_month" | "today";
+  const [selectedPeriod, setSelectedPeriod] =
+    useState<PeriodOption>("all_time");
 
-  const currentTitle = TITLES[location.pathname] || "/";
+  const getPeriodLabel = (period: PeriodOption) => {
+    switch (period) {
+      case "all_time":
+        return "All Time";
+      case "this_month":
+        return "This Month";
+      case "today":
+        return "Today";
+    }
+  };
+
+  const handlePeriodChange = (period: PeriodOption) => {
+    setSelectedPeriod(period);
+    setShowDatePicker(false);
+  };
 
   return (
-    <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-gray-100 to-slate-160">
+    <div className="h-screen overflow-hidden relative bg-gradient-to-br from-slate-20 via-gray-60 to-slate-100 to-slate-160">
+      {/* TOP NAVIGATION BAR */}
+      <header className="fixed top-0 right-0 left-20 z-30 bg-gradient-to-br from-slate-20 via-gray-60 to-slate-100 border-b border-slate-200/50">
+        <div className="px-8 py-4">
+          <div className="flex items-center justify-between">
+            {/* Left: Logo */}
+            <div className="flex items-center gap-6">
+              <img src={logo} alt="TXMeter" className="h-8" />
+            </div>
+
+            {/* Right: System Status + Actions + Profile */}
+            <div className="flex items-center gap-6">
+              {/* Period Picker */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowDatePicker(!showDatePicker)}
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-slate-700 hover:bg-slate-600 transition-colors duration-200 text-white shadow-lg"
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span className="text-sm font-medium">
+                    {getPeriodLabel(selectedPeriod)}
+                  </span>
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+
+                {/* Period Options Dropdown */}
+                {showDatePicker && (
+                  <div className="absolute top-full mt-2 right-0 bg-white rounded-xl shadow-2xl border border-slate-200 py-2 w-48 z-50">
+                    <button
+                      onClick={() => handlePeriodChange("today")}
+                      className={`w-full px-4 py-2.5 text-left text-sm font-medium transition-colors duration-150 ${
+                        selectedPeriod === "today"
+                          ? "bg-blue-50 text-blue-700"
+                          : "text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      Today
+                    </button>
+                    <button
+                      onClick={() => handlePeriodChange("this_month")}
+                      className={`w-full px-4 py-2.5 text-left text-sm font-medium transition-colors duration-150 ${
+                        selectedPeriod === "this_month"
+                          ? "bg-blue-50 text-blue-700"
+                          : "text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      This Month
+                    </button>
+                    <button
+                      onClick={() => handlePeriodChange("all_time")}
+                      className={`w-full px-4 py-2.5 text-left text-sm font-medium transition-colors duration-150 ${
+                        selectedPeriod === "all_time"
+                          ? "bg-blue-50 text-blue-700"
+                          : "text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      All Time
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* System Status */}
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-50/80 border border-emerald-200/60">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span className="text-sm font-medium text-emerald-700">
+                  System: Healthy
+                </span>
+              </div>
+
+              {/* Notification Bell */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="relative p-2.5 rounded-xl hover:bg-slate-100 transition-colors duration-200 text-slate-600 hover:text-slate-900"
+                >
+                  <Bell className="w-5 h-5" />
+                  {/* Notification Badge */}
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                </button>
+              </div>
+
+              {/* User Profile */}
+              <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-slate-800">
+                    {user?.username || payload?.email || "Admin User"}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {tenant?.name || "Administrator"}
+                  </p>
+                </div>
+                <button className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center text-white font-semibold shadow-lg hover:scale-105 transition-transform duration-200">
+                  <User className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
       {/* LEFT SIDEBAR - Thin & Integrated */}
       <aside className="flex fixed left-0 top-0 bottom-0 w-20 z-40 flex-col bg-gradient-to-br from-slate-20 via-gray-60 to-slate-100">
         {/* Company info moved to main header area */}
@@ -83,7 +191,7 @@ export default function AdminLayout() {
                   <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900/95"></div>
                 </div>
               </div>
-            ))
+            )),
           )}
         </nav>
 
@@ -120,70 +228,12 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main Content - Spacious Layout */}
-      <main className="ml-20 h-screen overflow-y-auto custom-scrollbar">
-        <div className="px-8 py-12">
-          <div className="mx-auto max-w-6xl">
-            {/* Header Area - Modern Welcome Header */}
-            <div className="mb-12">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                {/* Left Side - Greeting & User Info */}
-                <div className="flex items-center gap-4">
-                  {/* Greeting & Company Info */}
-                  <div>
-                    <p className="font-extralight text-slate-950">
-                      Personal Dashboard
-                    </p>
-                    <h1 className="text-3xl font-sans text-slate-950 mb-1">
-                     {currentTitle}
-                    </h1>
-                    <div className="flex items-center gap-2 text-slate-600 ">
-                      {tenant?.name && (
-                        <>
-                          <Building2 className="h-4 w-4" />
-                          <span className="text-sm font-extralight text-slate-950">
-                            {tenant.name}
-                          </span>
-                          {tenant.businessId && (
-                            <span className="text-xs text-slate-400">
-                              • {tenant.businessId}
-                            </span>
-                          )}
-                        </>
-                      )}
-                      {!tenant?.name && (
-                        <span className="text-sm text-slate-500">
-                          Welcome to your dashboard
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Side - Action Buttons */}
-                <div className="flex items-center gap-3">
-                  {/* Notifications Button */}
-                  <button className="relative w-11 h-11 rounded-2xl bg-white/70 hover:bg-white border border-slate-200/60 hover:border-slate-300 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center group">
-                    <Bell className="h-5 w-5 text-slate-600 group-hover:text-slate-900 transition-colors" />
-                    {/* Notification Badge */}
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></div>
-                  </button>
-
-                  {/* Settings Button */}
-                  <button className="w-11 h-11 rounded-2xl bg-white/70 hover:bg-white border border-slate-200/60 hover:border-slate-300 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center group">
-                    <Settings className="h-5 w-5 text-slate-600 group-hover:text-slate-900 group-hover:rotate-90 transition-all duration-300" />
-                  </button>
-
-                  {/* User Menu Button */}
-                </div>
-              </div>
-
-              {/* Divider */}
-              <div className="mt-8 w-full h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
-            </div>
-
+      <main className="ml-20 h-screen overflow-y-auto custom-scrollbar pt-20 bg-gradient-to-br from-slate-100 via-gray-60 to-slate-20 to-slate-160">
+        <div className="px-8 py-8">
+          <div className="mx-auto ">
             {/* Content Area */}
-            <div className="space-y-8">
-              <Outlet />
+            <div>
+              <Outlet context={{ selectedPeriod, setSelectedPeriod }} />
             </div>
           </div>
         </div>

@@ -100,7 +100,7 @@ export interface Page<T> {
 
 // ===== Rides & Payments =====
 export enum RideStatus {
-  CREATED = "CREATED",
+  DRAFT = "DRAFT",
   ONGOING = "ONGOING",
   COMPLETED = "COMPLETED",
   CANCELLED = "CANCELLED",
@@ -108,14 +108,15 @@ export enum RideStatus {
 
 export enum PaymentProvider {
   VIVA = "VIVA",
-  STRIPE = "STRIPE",
+  CASH = "CASH",
 }
 
 export enum PaymentStatus {
   PENDING = "PENDING",
   PAID = "PAID",
   FAILED = "FAILED",
-  CANCELED = "CANCELED",
+  REFUNDED = "REFUNDED",
+  REQUIRES_ACTION = "REQUIRES_ACTION",
 }
 
 export interface Ride {
@@ -157,40 +158,51 @@ export interface Payment {
   numberPeriod?: string | null;
 }
 
-// Monthly summary used by the Dashboard/Transactions header
-export interface MonthlyReportSummary {
-  period: string; // Date range string like "2025-10-31 to 2025-11-30"
-  totalRides: number;
-  totalRevenue: string; // String representation of decimal
-  totalDistance: string; // String representation of decimal
-  avgFarePerRide: string; // String representation of decimal
-  activeDrivers: number;
-  completionRate: string; // String percentage like "100.0"
-  paymentRate: string; // String percentage like "100.0"
-  topDriver: {
-    name: string;
-    rides: number;
-    revenue: string;
+export interface ReportsSummaryResponse {
+  period: string;
+  rides: {
+    total: number;
+    completed: number;
+    cancelled: number;
+    ongoing: number;
+    allDrivers: number;
+    activeDrivers: number;
   };
+  revenue: {
+    subtotal: string;
+    tax: string;
+    total: string;
+  };
+  paymentDistribution: {
+    card: string;
+    cash: string;
+    failed: string;
+  };
+}
+
+export interface ReportsSummaryDto {
+  from?: string; // ISO date string
+  to?: string; // ISO date string
+  driverId?: string; // optional filter by driver profile ID
+  granuality?: "daily" | "weekly" | "monthly"; // optional, default monthly
 }
 
 export interface MonthlyPaymentMethodsReport {
   period: string; // Date range string like "2025-10-31 to 2025-11-30"
   paymentMethods: [
     {
-    paymentMethod: string;
-    paymentCount: number;
-    totalAmount: string;
-    percentage: number;
-    }
-  ],
+      paymentMethod: string;
+      paymentCount: number;
+      totalAmount: string;
+      percentage: number;
+    },
+  ];
   summary: {
     totalPayments: number;
     totalAmount: string;
     avgPaymentAmount: string;
     paymentRate: string; // String percentage like "100.0"
-  }
-
+  };
 }
 
 export type OrderDir = "asc" | "desc";
